@@ -1,0 +1,4 @@
+indicator_env/
+data/
+__pycache__/
+.env
