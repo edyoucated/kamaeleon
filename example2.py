@@ -18,14 +18,10 @@ learning_path.print_full_path()
 #%% CREATE LEARNING PLAN
 start_date = "2022-12-02"
 end_date = "2023-01-02"
+# end_date = "2023-06-02"
 
-learning_plan = LearningPlan(
-    start_date=start_date,
-    end_date=end_date,
-    learning_path=learning_path
-)
-
-learning_plan.initialize()
+learning_plan = LearningPlan(learning_path=learning_path)
+learning_plan.initialize(start_date=start_date, end_date=end_date)
 learning_plan.print_current_week()
 
 #%% ADD LEARNING INDICATOR
@@ -34,9 +30,8 @@ learning_indicator.show()
 
 
 #%% MAKE PROGRESS
-learning_plan.make_progress(number_of_materials=6)
+learning_plan.make_progress(6)
 learning_plan.print_current_week()
-learning_plan.print_next_week()
 learning_indicator.show()
 
 
@@ -67,10 +62,10 @@ learning_plan.update()
 learning_indicator.show()
 
 #%% EARLY FINISH
-# learning_plan.make_progress(40)
-# learning_plan.set_new_date("2022-12-27")
-# learning_plan.update_after_week()
-# learning_indicator.show()
+learning_plan.make_progress(40)
+learning_plan.set_new_date("2022-12-27")
+learning_plan.update()
+learning_indicator.show()
 
 
 # %% MAKE PROGRESS
@@ -81,9 +76,9 @@ learning_plan.update()
 learning_indicator.show()
 
 #%% FINISH 1
-# learning_plan.set_new_date("2023-01-04")
-# learning_plan.update_after_week()
-# learning_indicator.show()
+learning_plan.set_new_date("2023-01-04")
+learning_plan.update()
+learning_indicator.show()
 
 #%% FINISH 2
 learning_plan.make_progress(5)

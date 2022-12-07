@@ -21,13 +21,8 @@ learning_path.initialize_from_id(id=learning_path_id, language=language)
 start_date = "2022-12-02"
 end_date = "2023-01-18"
 
-learning_plan = LearningPlan(
-    start_date=start_date,
-    end_date=end_date,
-    learning_path=learning_path
-)
-
-learning_plan.initialize()
+learning_plan = LearningPlan(learning_path=learning_path)
+learning_plan.initialize(start_date=start_date, end_date=end_date)
 learning_plan.print_current_week()
 
 #%% ADD LEARNING INDICATOR
@@ -67,3 +62,5 @@ learning_plan.make_progress(14)
 learning_plan.set_new_date("2022-12-26")
 learning_plan.update()
 learning_indicator.show()
+
+# %%

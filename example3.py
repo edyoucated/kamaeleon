@@ -19,13 +19,8 @@ learning_path.print_full_path()
 start_date = "2022-12-02"
 end_date = "2023-01-02"
 
-learning_plan = LearningPlan(
-    start_date=start_date,
-    end_date=end_date,
-    learning_path=learning_path
-)
-
-learning_plan.initialize()
+learning_plan = LearningPlan(learning_path=learning_path)
+learning_plan.initialize(start_date=start_date, end_date=end_date)
 learning_plan.print_current_week()
 
 #%% ADD LEARNING INDICATOR
@@ -63,7 +58,7 @@ learning_indicator.show()
 # learning_plan.update()
 # learning_indicator.show()
 
-#%% OR RESET DEADLINE
+#%% OR RESET DEADLINE (fix indicator!)
 learning_plan.reset_end_date("2023-02-21")
 learning_plan.update()
 learning_plan.print_summary()

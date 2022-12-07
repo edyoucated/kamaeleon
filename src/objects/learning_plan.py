@@ -1,3 +1,5 @@
+import random 
+
 from typing import List
 from collections import deque
 from copy import deepcopy
@@ -70,9 +72,9 @@ class WeeklyWorkload:
 
 
 class LearningPlan:
-    def __init__(self, start_date: str, end_date: str, learning_path: LearningPath) -> None:
-        self.start_date = start_date
-        self.end_date = end_date
+    def __init__(self, learning_path: LearningPath) -> None:
+        self.start_date = None
+        self.end_date = None
         self.learning_path = learning_path
 
         self.current_week_start = None
@@ -104,7 +106,9 @@ class LearningPlan:
         else:
             return None
     
-    def initialize(self) -> None:
+    def initialize(self, start_date: str, end_date: str,) -> None:
+        self.start_date = start_date
+        self.end_date = end_date
         self.weekly_workloads = self.calculate_weekly_workload(
             start_date=self.start_date,
             end_date=self.end_date
@@ -113,22 +117,26 @@ class LearningPlan:
         self.current_date = self.start_date
 
     def update(self) -> None:
-        # ARCHIVE PAST LEARNING ACTIVITIES
-        # move active workload (and more) to past if necessary 
-        while self.weekly_workloads:
-            # these are ordered
-            if self.weekly_workloads[0].end_date < self.current_date:
-                workload = self.weekly_workloads.pop(0)
-                self.past_weekly_workloads.append(deepcopy(workload)) # deepcopy makes sure it is not touched anymore
-            else: 
-                break
-        
-        # move additional materials that have been finished to latest finalized week (this is only to make the simulation work)
-        for workload in self.weekly_workloads:
-            for material in workload.materials:
-                if material.is_finished:
-                    self.past_week_workload.add_additional_material(material)
 
+        if self.current_week_workload.end_date < self.current_date: # current week is over
+            # ARCHIVE PAST LEARNING ACTIVITIES
+            # move active workload (and more) to past if necessary 
+            while self.weekly_workloads:
+                # these are ordered
+                if self.weekly_workloads[0].end_date < self.current_date:
+                    workload = self.weekly_workloads.pop(0)
+                    self.past_weekly_workloads.append(deepcopy(workload)) # deepcopy makes sure it is not touched anymore
+                else: 
+                    break
+            
+            # move additional materials that have been finished to latest finalized week (this is only to make the simulation work)
+            # skip current week materials
+            for workload in self.weekly_workloads:
+                for material in workload.materials:
+                    if material.is_finished:
+                        self.past_week_workload.add_additional_material(material)
+
+        
         if self.learning_path.progress_percent == 1:
             self.is_done = True # nothing to be done anymore
         elif self.current_date > self.end_date:
@@ -148,6 +156,11 @@ class LearningPlan:
         for skill_id in skill_ids:
             self.learning_path.assess_skill_by_id(skill_id=skill_id)
 
+    def assess_random_skills(self, n: int) -> None:
+        skill_ids = random.choices(self.learning_path.skill_ids, k=n)
+        for skill_id in skill_ids:
+            self.learning_path.assess_skill_by_id(skill_id=skill_id)
+
     def make_progress(self, number_of_materials: int) -> None:
         # finishes one material after the other
         count = 0
@@ -160,7 +173,7 @@ class LearningPlan:
                 break
 
     def set_new_date(self, date: str) -> None:
-        if date <= self.current_date:
+        if date < self.current_date:
             raise ValueError(f"Date needs to be after {self.current_date}.")
         self.current_date = date
         pass
@@ -225,13 +238,19 @@ class LearningPlan:
             if len(unfinished_materials) == 0:
                 print(f"WARNING: Week {weekly_workload.start_date} could not be filled with materials.")
             else:
-                # add materials one by one
-                while abs(weekly_workload.actual_workload + unfinished_materials[0].duration - weekly_workload.theoretical_workload) <= abs(weekly_workload.actual_workload - weekly_workload.theoretical_workload):
-                    current_material = unfinished_materials.popleft()
-                    weekly_workload.add_material(current_material)
+                # always add at least one material
+                current_material = unfinished_materials.popleft()
+                weekly_workload.add_material(current_material)
+                
+                # if there are more materials left, add materials one by one until workload is full
+                if len(unfinished_materials) > 0:
+                    
+                    while abs(weekly_workload.actual_workload + unfinished_materials[0].duration - weekly_workload.theoretical_workload) <= abs(weekly_workload.actual_workload - weekly_workload.theoretical_workload):
+                        current_material = unfinished_materials.popleft()
+                        weekly_workload.add_material(current_material)
 
-                    if len(unfinished_materials) == 0:
-                        break
+                        if len(unfinished_materials) == 0:
+                            break
             
             actual_workloads.append(weekly_workload)
         
@@ -286,9 +305,12 @@ class LearningPlan:
 class LearningIndicator:
     def __init__(self, learning_plan: LearningPlan) -> None:
         self.learning_plan = learning_plan
-        self.average_learning_time_per_day = self._average_learning_time_per_day()
         self.total_buffer: float = 0.8
         self.weekly_buffer: float = 0.8
+
+    @property
+    def average_learning_time_per_day(self) -> None:
+        return self._average_learning_time_per_day()
 
     def _average_learning_time_per_day(self) -> float:
         lp_duration = self.learning_plan.learning_path.duration
@@ -298,7 +320,6 @@ class LearningIndicator:
             include_end_date=False
         )
         return lp_duration / total_learning_days
-
 
     def check_relative_learning_path_progress(self) -> bool:
         past_learning_days = get_day_delta(
@@ -333,13 +354,14 @@ class LearningIndicator:
             elif not rlpp and not lwp:
                 msg = "If you continue like this, your learning goal is off track. You need to catch up!"
         return msg
-        
-    def show(self) -> None:
-        print("\n==================================================")
-        print("LEARNING INDICATOR\n")
+
+    def display(self) -> str:
+        msg = "\n==================================================\n"
+        msg += "LEARNING INDICATOR\n"
+
         if self.learning_plan.out_of_date or self.learning_plan.is_done:
             # learning plan is over
-            self.summarize()
+            msg += self.summarize_msg()
         else:
             # show current learning plan
             if self.learning_plan.past_week_workload is not None:
@@ -351,20 +373,23 @@ class LearningIndicator:
                 next_weeks_workload_in_minutes = self.learning_plan.next_week_workload.actual_workload
             else: 
                 next_weeks_workload_in_minutes = "There is no next week."
-            msg = self.get_message()
 
             current_weeks_progress_in_minutes = self.learning_plan.current_week_workload.finished_workload
             current_weeks_workload_in_minutes = self.learning_plan.current_week_workload.actual_workload
 
-            print(f"Current week start: {self.learning_plan.current_week_start}")
-            print(f"Message: <{msg}>")
-            print(f"\nPast week's progress: {last_weeks_progress_in_percent}%.")
-            print(f"Current week's progress: {current_weeks_progress_in_minutes}/{current_weeks_workload_in_minutes}min.")
-            print(f"Next week's workload: {next_weeks_workload_in_minutes}min.")
+            msg += f"Current week start: {self.learning_plan.current_week_start}\n"
+            msg += f"Message: <{self.get_message()}>\n" 
+            msg += f"\nPast week's progress: {last_weeks_progress_in_percent}%.\n"
+            msg += f"Current week's progress: {current_weeks_progress_in_minutes}/{current_weeks_workload_in_minutes}min.\n"
+            msg += f"Next week's workload: {next_weeks_workload_in_minutes}min.\n"
 
-        print("==================================================\n")
+        msg += "\n==================================================\n"
+        return msg
+        
+    def show(self) -> None:
+        print(self.display())
 
-    def summarize(self) -> None:
+    def summarize_msg(self) -> str:
         msg = ""
         for workload in self.learning_plan.past_weekly_workloads:
             msg += f"\nWeek {workload.start_date}: {workload.progress_in_percent}%"
@@ -377,4 +402,7 @@ class LearningIndicator:
         elif self.learning_plan.current_date > self.learning_plan.end_date:
             msg += f"Learning goal missed: {self.learning_plan.learning_path.progress_percent}"
         
-        print(msg)
+        return msg
+
+    def summarize(self) -> None:
+        print(self.summarize_msg())
