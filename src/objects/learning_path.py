@@ -132,7 +132,7 @@ class LearningPath:
             print("\n---------------------")
             print(f"\n{skill.title}: {skill.id}")
             for material in skill.materials:
-                print(f"{material.title}: {material.duration} > {material.purpose}")
+                print(f"{material.title}: {material.id} | {material.duration} > {material.purpose}")
 
 
     def _load_skills(self) -> None:
@@ -221,11 +221,18 @@ class LearningPath:
         return [material for material in self.materials if not material.is_finished and not material.is_skipped]
 
     def get_skill_by_id(self, skill_id: str) -> Skill:
-        return next(skill for skill in self.skills if skill.id == skill_id)
+        return next((skill for skill in self.skills if skill.id == skill_id), None)
     
     def assess_skill_by_id(self, skill_id: str) -> None:
         skill = self.get_skill_by_id(skill_id)
         skill.assess_as_mastered()
+
+    def get_material_by_id(self, material_id: str) -> Material:
+        return next((material for material in self.materials if material.id == material_id), None)
+
+    def get_material_position_in_path_by_id(self, material_id: str) -> int:
+        # returns the position of a material in a learning path for sorting
+        return next(i for i, material in enumerate(self.materials) if material.id == material_id)
 
 
 

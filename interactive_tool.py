@@ -1,6 +1,6 @@
 # %% 
 import dash
-import dash_core_components as dcc
+from dash import dcc
 import dash_bootstrap_components as dbc
 
 import warnings
@@ -22,11 +22,6 @@ learning_path.initialize_from_id(id=learning_path_id, language=language)
 
 learning_plan = LearningPlan(learning_path=learning_path)
 learning_indicator = LearningIndicator(learning_plan=learning_plan)
-
-# REMOVE AFTERWARDS
-# learning_plan.current_date = "2020-01-01"
-# learning_plan.end_date = "2023-01-02"
-# learning_plan.start_date = "2022-12-02"
 
 
 def get_learning_path_materials_options(learning_path: LearningPath) -> dict: 
@@ -60,7 +55,7 @@ def split_message(msg: str) -> list:
 # the app itself
 app = dash.Dash(__name__, external_stylesheets = [dbc.themes.BOOTSTRAP])
 app.layout = html.Div([
-    dcc.Store(id='job-title-db'),
+    dcc.Store(id='update-store'),
     html.Div([
         dbc.Row([
                 dbc.Col([
@@ -79,7 +74,10 @@ app.layout = html.Div([
                 ]),
                 dbc.Col(
                     html.Div([
-                        html.H3("Settings"),
+                        html.Div([
+                            html.H3("Settings"),
+                            # html.Button("Reset", id="reset-button", n_clicks=0),
+                        ]),
                         html.Div([
                             dcc.DatePickerSingle(
                                 id='start-date-picker',
@@ -104,7 +102,8 @@ app.layout = html.Div([
                                 date=date(2022, 12, 5)
                             ),
                         html.Button("Update", id="update-button", n_clicks=0),
-                        html.Div(id="learning-indicator-output")
+                        html.Div(id="learning-indicator-output"),
+                        html.Div(id="learning-plan-output")
                     ])  
                 )
             ]
@@ -113,15 +112,16 @@ app.layout = html.Div([
     ])
 ])
 
-# @app.callback(
-#     [
-#         Output('learning-path-checklist', 'options'),
-#         Output('learning-path-checklist', 'value')
-#     ],
-#     Input('job-title-dropdown', 'value')
-# )
-# def update_output(value):
-#     pass
+@app.callback(
+    Output('update-store', 'data'),
+    Input('update-button', 'n_clicks'),
+    State('current-date-picker', 'date')
+)
+def update_output(n_clicks, date):
+    if n_clicks > 0:
+        learning_plan.set_new_date(date)
+
+    return "Trigger"
 
 @app.callback(
     Output("deadline-div", "children"),
@@ -139,55 +139,39 @@ def initialize_learning_plan(start_date, end_date, n_button_clicked):
         return "Deadline set"
     
 
-# @app.callback(
-#     [
-#         Input('start-date-picker', 'value'),
-#         Input('end-date-picker', 'value')
-#     ]
-
-# )
-# def print_learning_indicator(start_date, end_date):
-#     print(start_date, end_date)
-
-
-
 @app.callback(
     [
         Output("learning-indicator-output", "children"),
+        Output("learning-plan-output", "children"),
         Output("learning-path-checklist", "options"),
         Output("learning-path-checklist", "value")
     ],
-    Input('update-button', 'n_clicks'),
     [
-        State('current-date-picker', 'date'),
-        State('learning-path-checklist', 'value')
+        Input('learning-path-checklist', 'value'),
+        Input('update-store', 'data')
     ]
+    
 )
-def update_learning_plan_and_indicator(n_button_clicks, current_date, finished_material_ids):
-    if n_button_clicks == 0:
+def update_learning_plan_and_indicator(finished_material_ids, trigger):
+    if learning_plan.start_date is None:
         lpc_options = get_learning_path_materials_options(learning_path)
         lpc_values = get_learning_path_materials_values(learning_path)
-        return "", lpc_options, lpc_values
+        return "", "", lpc_options, lpc_values
 
     else:
         for material in learning_plan.learning_path.materials:
             if material.id in finished_material_ids and not (material.is_finished or material.is_skipped):
-                material.finish()
-        learning_plan.print_current_week()
-        learning_plan.set_new_date(current_date)
-        learning_plan.update()
-        learning_plan.print_current_week()
+                learning_plan.make_progress_by_material_id(material_id=material.id)
 
         msg = learning_indicator.display()
-
         lpc_options = get_learning_path_materials_options(learning_path)
         lpc_values = get_learning_path_materials_values(learning_path)
 
-        return split_message(msg), lpc_options, lpc_values
+        return split_message(msg), split_message(learning_plan.current_week_workload.__str__()), lpc_options, lpc_values
 
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run(debug=True)
 
 # %%
