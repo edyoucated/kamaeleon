@@ -4,7 +4,7 @@ from typing import List
 from collections import deque
 from copy import deepcopy
 
-from ..time_helper import get_day_delta, get_mondays_between, get_sundays_between, get_time_intervals
+from ..time_helper import get_day_delta, get_mondays_between, get_sundays_between, get_time_intervals, round_in_base
 from .learning_path import Material, LearningPath
 
 
@@ -18,6 +18,9 @@ class WeeklyWorkload:
         self.additional_materials: List[Material] = []
         self.is_finished: bool = False
 
+        self._round_mode = "ceil" # for rounding displayed weekly workloads
+        self._round_base = 10
+
     def __repr__(self) -> str:
         msg = "\nWEEKLY WORKLOAD"
         msg += f"\nWorkload week: {self.start_date} -> {self.end_date}\nMaterials:\n"
@@ -26,7 +29,7 @@ class WeeklyWorkload:
         if self.additional_materials:
             msg += f"\nAdditional workload:\n"
             msg += "\n".join([f"{material.title}: {material.duration}min, Done: {material.is_finished}" for material in self.additional_materials])
-        msg += f"\n\nTotal: {self.actual_workload} ({round(self.theoretical_workload)}) min, finished: {self.finished_workload}min" 
+        msg += f"\n\nTotal: {self.displayed_workload}min (actual: {self.actual_workload}, theoretical: {round(self.theoretical_workload)}), finished: {self.finished_workload}min."
         msg += f"\n\n-> Progress: {self.progress_in_percent}%" 
 
         return msg
@@ -35,6 +38,11 @@ class WeeklyWorkload:
     def actual_workload(self) -> int:
         # this is the actual workload of the week, containing current materials to be done and finished materials
         return sum([material.duration for material in self.materials] + [material.duration for material in self.additional_materials])
+
+    @property
+    def displayed_workload(self) -> int:
+        # this is the workload that is displayed to the user
+        return round_in_base(self.target_workload, base=self._round_base, mode=self._round_mode) 
 
     def add_material(self, material: Material) -> None: 
         self.materials.append(material)
@@ -50,7 +58,8 @@ class WeeklyWorkload:
     def progress_in_percent(self) -> int:
         # counts progress made in week (also additional materials, that have not been originally part of this workload)
         if self.target_workload != 0:
-            progress = round((self.finished_workload / self.target_workload) * 100)
+            # progress = round((self.finished_workload / self.target_workload) * 100) 
+            progress = round((self.finished_workload / self.displayed_workload) * 100)
         else:
             progress = 100
         return progress
@@ -97,6 +106,30 @@ class LearningPlan:
 
         self.out_of_date: bool = False
         self.is_done: bool = False
+
+        self._round: bool = True
+        self._round_base = 15
+        self._round_mode = "none"
+
+    @property
+    def round_mode(self) -> None:
+        return self._round_mode
+
+    @round_mode.setter
+    def round_mode(self, value) -> None:
+        if value not in ("best", "ceil", "floor", "none"):
+            raise ValueError("Wrong mode.")
+        self._round_mode = value
+
+    @property
+    def round_base(self) -> None:
+        return self._round_base
+
+    @round_base.setter
+    def round_base(self, value) -> None:
+        if not isinstance(value, int):
+            raise ValueError("Base needs to be an integer.")
+        self._round_base = value
 
     @property
     def current_week_workload(self) -> WeeklyWorkload:
@@ -165,7 +198,8 @@ class LearningPlan:
         if len(unfinished_materials) > 0:
         
             unfinished_materials: deque = deque(unfinished_materials)
-            while abs(workload.actual_workload + unfinished_materials[0].duration - workload.theoretical_workload) <= abs(workload.actual_workload - workload.theoretical_workload):
+            # while abs(workload.actual_workload + unfinished_materials[0].duration - workload.theoretical_workload) <= abs(workload.actual_workload - workload.theoretical_workload):
+            while abs(round_in_base(workload.actual_workload + unfinished_materials[0].duration, base=self.round_base, mode=self.round_mode) - workload.theoretical_workload) <= abs(round_in_base(workload.actual_workload, base=self.round_base, mode=self.round_mode) - workload.theoretical_workload):
                 current_material = unfinished_materials.popleft()
                 workload.add_material(current_material)
                 if len(unfinished_materials) == 0:
@@ -180,7 +214,8 @@ class LearningPlan:
         # move all additionally finished materials (from upcoming weeks) to the latest finished week (additional learning activities)
         # recalculate plan from start of the active week 
         pass
-
+    
+    # DEPRECATE
     def update(self) -> None:
         if self.current_week_workload.end_date < self.current_date: # current week is over
             # ARCHIVE PAST LEARNING ACTIVITIES
@@ -192,7 +227,6 @@ class LearningPlan:
                     self.past_weekly_workloads.append(deepcopy(workload)) # deepcopy makes sure it is not touched anymore
                 else: 
                     break
-        
         
         if self.learning_path.progress_percent == 1:
             self.is_done = True # nothing to be done anymore
@@ -338,7 +372,8 @@ class LearningPlan:
                 # if there are more materials left, add materials one by one until workload is full
                 if len(unfinished_materials) > 0:
                     
-                    while abs(weekly_workload.actual_workload + unfinished_materials[0].duration - weekly_workload.theoretical_workload) <= abs(weekly_workload.actual_workload - weekly_workload.theoretical_workload):
+                    # while abs(weekly_workload.actual_workload + unfinished_materials[0].duration - weekly_workload.theoretical_workload) <= abs(weekly_workload.actual_workload - weekly_workload.theoretical_workload):
+                    while abs(round_in_base(weekly_workload.actual_workload + unfinished_materials[0].duration, base=self.round_base, mode=self.round_mode) - weekly_workload.theoretical_workload) <= abs(round_in_base(weekly_workload.actual_workload, base=self.round_base, mode=self.round_mode) - weekly_workload.theoretical_workload):
                         current_material = unfinished_materials.popleft()
                         weekly_workload.add_material(current_material)
 
@@ -352,8 +387,10 @@ class LearningPlan:
             for remaining_material in unfinished_materials:
                 actual_workloads[-1].add_material(remaining_material)
 
-        # set target workloads 
+        # set target workloads and add correct rounding mode
         for workload in actual_workloads:
+            workload._round_base = self._round_base
+            workload._round_mode = self._round_mode
             workload.update()
 
         return actual_workloads
@@ -392,10 +429,8 @@ class LearningPlan:
         print(f"Current date: {self.current_date}\n")
 
         for workload in self.past_weekly_workloads + self.weekly_workloads:
-            msg = f"Week {workload.start_date}: {workload.finished_workload} / {workload.actual_workload} ({round(workload.theoretical_workload)}) = {workload.progress_in_percent}%"
-            if workload.additional_materials:
-                msg += f" + {workload.additionally_finished_workload}min"
-
+            # msg = f"Week {workload.start_date}: {workload.finished_workload} / {workload.actual_workload} ({round(workload.theoretical_workload)}) = {workload.progress_in_percent}%" 
+            msg = f"Week {workload.start_date}: {workload.finished_workload} / {workload.displayed_workload} ({round(workload.theoretical_workload)}) = {workload.progress_in_percent}%"
             print(msg)
 
 
@@ -467,12 +502,14 @@ class LearningIndicator:
                 last_weeks_progress_in_percent = "There is no last week."
 
             if self.learning_plan.next_week_workload is not None:
-                next_weeks_workload_in_minutes = self.learning_plan.next_week_workload.target_workload
+                # next_weeks_workload_in_minutes = self.learning_plan.next_week_workload.target_workload
+                next_weeks_workload_in_minutes = self.learning_plan.next_week_workload.displayed_workload # this includes rounding
             else: 
                 next_weeks_workload_in_minutes = "There is no next week."
 
             current_weeks_progress_in_minutes = self.learning_plan.current_week_workload.finished_workload
-            current_weeks_workload_in_minutes = self.learning_plan.current_week_workload.target_workload
+            # current_weeks_workload_in_minutes = self.learning_plan.current_week_workload.target_workload 
+            current_weeks_workload_in_minutes = self.learning_plan.current_week_workload.displayed_workload # this includes rounding
 
             msg += f"Current week start: {self.learning_plan.current_week_start}\n"
             msg += f"Message: <{self.get_message()}>\n" 

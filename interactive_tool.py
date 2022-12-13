@@ -21,6 +21,10 @@ learning_path = LearningPath()
 learning_path.initialize_from_id(id=learning_path_id, language=language)
 
 learning_plan = LearningPlan(learning_path=learning_path)
+learning_plan.round_base = 15
+learning_plan.round_mode = "best"
+
+
 learning_indicator = LearningIndicator(learning_plan=learning_plan)
 
 

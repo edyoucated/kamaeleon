@@ -1,4 +1,5 @@
 import pandas as pd
+import math
 from datetime import datetime
 from typing import List
 
@@ -21,4 +22,17 @@ def get_day_delta(start_date: str, end_date: str, include_end_date: bool=True) -
     return delta_days
 
 def get_time_intervals(starts: List[str], ends: List[str]) -> List[str]:
-    return [get_day_delta(start, end, include_end_date=True) for start, end in zip(starts, ends) ]
+    return [get_day_delta(start, end, include_end_date=True) for start, end in zip(starts, ends)]
+
+def round_in_base(x, base=10, mode="best"):
+    if mode == "best":
+        result = base * round(x/base)
+    elif mode == "ceil":
+        result = base * math.ceil(x/base)
+    elif mode == "floor":
+        result = base * math.floor(x/base)
+    elif mode == "none":
+        return x
+    else: 
+        raise ValueError("Mode needs to be 'best', 'ceil', 'floor' or 'none.")
+    return result
