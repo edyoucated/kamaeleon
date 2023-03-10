@@ -14,14 +14,21 @@ from src.objects.learning_path import LearningPath
 from src.objects.learning_plan import LearningPlan, LearningIndicator
 
 # %% load learning path
-learning_path_id = "9ffc6b57-f46d-4ca2-95e2-e1e90313717e" # Data Reporting
-language = "en"
+# learning_path_id = "9ffc6b57-f46d-4ca2-95e2-e1e90313717e" # Data Reporting
+# language = "en"
+
+learning_path_id = "b42c3732-4baf-4e60-957e-beffbb9ea314" # Grundlagen agiles Management
+language = "de"
+
+# learning_path_id = "9f545cd2-cc08-4f95-9f0a-e7fd0fbf9909" # Führung in der Praxis
+# language = "de"
+
 
 learning_path = LearningPath()
 learning_path.initialize_from_id(id=learning_path_id, language=language)
 
 learning_plan = LearningPlan(learning_path=learning_path)
-learning_plan.round_base = 15
+learning_plan.round_base = 5
 learning_plan.round_mode = "best"
 
 
@@ -107,6 +114,7 @@ app.layout = html.Div([
                             ),
                         html.Button("Update", id="update-button", n_clicks=0),
                         html.Div(id="learning-indicator-output"),
+                        html.Div(id="learning-plan-summary"),
                         html.Div(id="learning-plan-output")
                     ])  
                 )
@@ -146,6 +154,7 @@ def initialize_learning_plan(start_date, end_date, n_button_clicked):
 @app.callback(
     [
         Output("learning-indicator-output", "children"),
+        Output("learning-plan-summary", "children"),
         Output("learning-plan-output", "children"),
         Output("learning-path-checklist", "options"),
         Output("learning-path-checklist", "value")
@@ -160,7 +169,7 @@ def update_learning_plan_and_indicator(finished_material_ids, trigger):
     if learning_plan.start_date is None:
         lpc_options = get_learning_path_materials_options(learning_path)
         lpc_values = get_learning_path_materials_values(learning_path)
-        return "", "", lpc_options, lpc_values
+        return "", "", "", lpc_options, lpc_values
 
     else:
         for material in learning_plan.learning_path.materials:
@@ -171,7 +180,7 @@ def update_learning_plan_and_indicator(finished_material_ids, trigger):
         lpc_options = get_learning_path_materials_options(learning_path)
         lpc_values = get_learning_path_materials_values(learning_path)
 
-        return split_message(msg), split_message(learning_plan.current_week_workload.__str__()), lpc_options, lpc_values
+        return split_message(msg),  split_message(learning_plan.summary_msg()), split_message(learning_plan.current_week_workload.__str__()), lpc_options, lpc_values
 
 
 
