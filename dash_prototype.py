@@ -11,7 +11,8 @@ from dash.dependencies import Input, Output, State
 from datetime import date
 
 from src.objects.learning_path import LearningPath
-from src.objects.learning_plan import LearningPlan, LearningIndicator
+from src.objects.learning_plan import LearningPlan
+from src.objects.learning_indicator import LearningIndicator
 
 # %% load learning path
 # learning_path_id = "9ffc6b57-f46d-4ca2-95e2-e1e90313717e" # Data Reporting
@@ -30,7 +31,6 @@ learning_path.initialize_from_id(id=learning_path_id, language=language)
 learning_plan = LearningPlan(learning_path=learning_path)
 learning_plan.round_base = 5
 learning_plan.round_mode = "best"
-
 
 learning_indicator = LearningIndicator(learning_plan=learning_plan)
 
