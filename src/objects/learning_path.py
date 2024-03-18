@@ -17,7 +17,16 @@ class PurposeOrder(Enum):
 
 
 class Material: 
-    def __init__(self, id: str, title: str, duration: int, empirical_duration: int, language: str, purpose: str, use_empirical_duration: bool=False) -> None:
+    def __init__(
+        self, 
+        id: str, 
+        title: str, 
+        duration: int, 
+        empirical_duration: int, 
+        language: str, 
+        purpose: str, 
+        use_empirical_duration: bool=False
+    ) -> None:
         self.id = id
         self.title = title
         self._duration = duration

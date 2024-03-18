@@ -3,14 +3,27 @@ import pandas as pd
 import json 
 import re
 
-from typing import List
+from typing import List, Tuple
+from enum import Enum
 
 
-ORGANIZATION_IDS = [
+ORGANIZATION_IDS_LEARNING_INDICATOR = [
     "a1460275-3c3e-44ee-b522-9dfb59efffb7", # EIF 
     "0c30cde3-7b25-4765-9db8-60696a8fb5a0", # KAMAELEON-A
     "adad2008-bbf3-40f5-b292-7920fd9bc188", # KAMAELEON-B 
 ]
+
+ORGANIZATION_IDS_ADAPTIVE_LEARNING = [
+    "b2cc892d-12d6-4aab-a4d0-2bfa1bc723f0", # KAMAELEON-C
+    "9d257b52-f84a-4813-97f5-3b0d63dc6e67", # KAMAELEON-D
+    "cb4225bf-6fea-4fa8-8a98-8272cb0b139b" # KAMAELEON-E
+]
+
+
+class LearningPathType(Enum):
+    STATIC = "STATIC"
+    SELF_ASSESSMENT = "SELF_ASSESSMENT"
+    QUIZ_ASSESSMENT = "QUIZ_ASSESSMENT"
 
 
 def resolve_research_id(x: str) -> None: 
@@ -18,12 +31,12 @@ def resolve_research_id(x: str) -> None:
     x = json.loads(x)
     if x["name"] == "RESEARCH-ID":
         if re.search(r"[a-zA-Z]\d{2}[a-zA-Z]\d", x["value"]):
-            result = x["value"] 
+            result = x["value"].upper() 
     return result
 
 def load_users(
-        path: str="data/membership.csv", 
-        organization_ids: List[str]=ORGANIZATION_IDS) -> pd.DataFrame:
+        organization_ids: List[str],
+        path: str="data/membership.csv") -> pd.DataFrame:
     membership = pd.read_csv(path)
     membership = membership[membership["role"] == "Member"]
     membership["research_id"] = membership["reference_data_attribute_1"].apply(lambda x: resolve_research_id(x) if not pd.isna(x) else None)
@@ -32,8 +45,27 @@ def load_users(
     membership = membership[membership["organization_id"].isin(organization_ids)]
     return membership
 
-def get_research_id_by_user_id(user_id: str, path: str="data/membership.csv") -> str:
-    users = load_users(path=path)
+
+def load_users_without_research_id(
+        organization_ids: List[str],
+        path: str="data/membership.csv") -> pd.DataFrame:
+    membership = pd.read_csv(path)
+    membership = membership[membership["role"] == "Member"]
+    membership["research_id"] = membership["reference_data_attribute_1"].apply(lambda x: resolve_research_id(x) if not pd.isna(x) else None)
+    membership.drop(columns=["reference_data_attribute_1"], inplace=True)
+    membership = membership[pd.isna(membership["research_id"])]
+    membership = membership[membership["organization_id"].isin(organization_ids)]
+    return membership
+
+
+def get_research_id_by_user_id(
+        user_id: str, 
+        organization_ids: list,
+        path: str="data/membership.csv") -> str:
+    users = load_users(
+        organization_ids=organization_ids,
+        path=path
+    )
     users.set_index("user_id", drop=True, inplace=True)
     try:
         research_id = users.loc[user_id]["research_id"]
@@ -90,17 +122,43 @@ def camel_to_snake(column_name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
+def resolve_assessment(assessment: dict) -> pd.DataFrame:
+
+    assessment_results = []
+    revision_results = []
+
+    for assessment_step in assessment:
+
+        # resolve assessedSkills 
+        assessed_skills = assessment_step["assessedSkills"]
+        for s in assessed_skills:
+            assessment_results.append({
+                "skill_id": s["skillId"],
+                "assessment_result": s["userAnswer"]
+            })
 
 
-if __name__ == "__main__":
-    path ="data/membership.csv"
-    users = load_users(path=path)
-    print(users.head())
+        # resolve reviewedSkills
+        reviewed_skills = assessment_step["reviewedSkills"]
+        for s in reviewed_skills:
+            revision_results.append({
+                "skill_id": s["skillId"],
+                "assessment_before_revision": s["assessedAs"],
+                "assessment_after_revision": s["reviewedAs"],
+                "correction_in_revision": (s["assessedAs"] != s["reviewedAs"])
+            })
 
-    user_id = "7b9c0f60bff9b68fe249e070273dd2f6e23c3a22"
-    research_id = get_research_id_by_user_id(
-        user_id=user_id,
-        path=path
+
+    assessment_results_df = pd.DataFrame(assessment_results)
+    revision_results_df = pd.DataFrame(revision_results)
+
+    final = revision_results_df.merge(
+        assessment_results_df, 
+        on="skill_id",
+        how="outer"
     )
-    print(research_id)
+
+    return final
+
+
 

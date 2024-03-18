@@ -1,5 +1,8 @@
 indicator_env/
 data/
 __pycache__/
+export/
+data_import/
+
 .env
-first_check.py
+

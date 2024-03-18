@@ -26,7 +26,10 @@ language = "de"
 
 
 learning_path = LearningPath()
-learning_path.initialize_from_id(id=learning_path_id, language=language)
+learning_path.initialize_from_id(
+    id=learning_path_id, 
+    language=language
+)
 
 learning_plan = LearningPlan(learning_path=learning_path)
 learning_plan.round_base = 5
@@ -186,5 +189,3 @@ def update_learning_plan_and_indicator(finished_material_ids, trigger):
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-# %%

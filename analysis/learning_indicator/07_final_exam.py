@@ -40,3 +40,4 @@ exam_results = pd.DataFrame(
 exam_results
 
 # %%
+exam_results[exam_results["learning_path_exam_id"] == "bbe0d4a2-64fc-477a-997e-f5c0c7ba8065"]
