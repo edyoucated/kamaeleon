@@ -1,13 +1,17 @@
 #%%
-import pandas as pd
+import os
 import json
+import pandas as pd
+
+from kamaeleon.analysis.analysis_helper import (
+    DATA_PATH_LEARNING_INDICATOR, 
+    SAVE_PATH_LEARNING_INDICATOR
+)
 
 #%% 
-lp_exam = pd.read_csv("data/learning_path_exam.csv")
+lp_exam = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "fct_learning_path_exam.csv"))
 
-# %%
 exam_results_raw = []
-
 for i, row in lp_exam.iterrows():
     temp = json.loads(row["exam_results"])
 
@@ -20,7 +24,8 @@ for i, row in lp_exam.iterrows():
                 tm["questionTitle"],
                 tm["connectedSkillId"],
                 tm["isCorrect"], 
-                tm["isSkipped"] 
+                tm["isSkipped"], 
+                row["origin_id"]
             )
         )
 
@@ -33,11 +38,12 @@ exam_results = pd.DataFrame(
         "question_title",
         "connected_skill_id",
         "is_correct",
-        "is_skipped"
+        "is_skipped",
+        "learning_path_id"
     ]
 )
 
-exam_results
-
-# %%
-exam_results[exam_results["learning_path_exam_id"] == "bbe0d4a2-64fc-477a-997e-f5c0c7ba8065"]
+exam_results.to_csv(
+    os.path.join(SAVE_PATH_LEARNING_INDICATOR, "learning_path_exam_results.csv"),
+    index=False
+)

@@ -1,11 +1,16 @@
 # %% Wie oft hat eine Person ein wöchentliches Ziel (nicht) erreicht?
-
 import pandas as pd
 import numpy as np
 import json
+import os
+
+from kamaeleon.analysis.analysis_helper import (
+    DATA_PATH_LEARNING_INDICATOR,
+    SAVE_PATH_LEARNING_INDICATOR
+)
 
 
-periodic_workload = pd.read_csv("data/periodic_workload.csv")
+periodic_workload = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "fct_periodic_workload.csv"))
 
 # %%
 final_workload_per_week = periodic_workload.sort_values(
@@ -36,6 +41,11 @@ final_workload_per_week = final_workload_per_week[[
     "user_id"
 ]].rename(columns={"related_entity_id": "learning_path_id"})
 
+final_workload_per_week.to_csv(
+    os.path.join(SAVE_PATH_LEARNING_INDICATOR, "final_workload_per_week.csv"),
+    index=False
+)
+
 
 #%% Example:
 final_workload_per_week[final_workload_per_week["goal_id"] == "053f073b-87cd-4726-8bb2-a8012fd5ed65"]
@@ -46,6 +56,8 @@ finished_workloads = final_workload_per_week.groupby(["user_id", "goal_id"])["wo
     "count": "total_workloads",
     "mean": "ratio"
 })
-finished_workloads
+finished_workloads.to_csv(
+    os.path.join(SAVE_PATH_LEARNING_INDICATOR, "finished_workloads.csv"),
+    index=False
+)
 
-# %%

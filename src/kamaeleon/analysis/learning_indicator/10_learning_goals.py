@@ -1,8 +1,12 @@
-#%% 
-# Was für ein Ziel haben sich die Lernenden gesetzt (d.h. welche Deadline) und wann?
+#%% Was für ein Ziel haben sich die Lernenden gesetzt (d.h. welche Deadline) und wann?
+import os
 import pandas as pd 
 
-from helper import load_users
+from kamaeleon.analysis.analysis_helper import load_users
+from kamaeleon.analysis.analysis_helper import (
+    DATA_PATH_LEARNING_INDICATOR,
+    SAVE_PATH_LEARNING_INDICATOR
+)
 
 ORGANIZATION_IDS = [
     "a1460275-3c3e-44ee-b522-9dfb59efffb7", # EIF 
@@ -10,12 +14,12 @@ ORGANIZATION_IDS = [
     "adad2008-bbf3-40f5-b292-7920fd9bc188", # KAMAELEON-B 
 ]
 
-learning_goal = pd.read_csv("data/goal.csv")
+learning_goal = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "fct_goal.csv"))
 users = load_users(
-    path="data/membership.csv",
+    path=os.path.join(DATA_PATH_LEARNING_INDICATOR, "dim_membership.csv"),
     organization_ids=ORGANIZATION_IDS
 )
-learning_path = pd.read_csv("data/learning_path.csv")
+learning_path = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "dim_learning_path.csv"))
 
 # %% filter learning goals for organization and users in that organization
 learning_goal = learning_goal[learning_goal["organization_id"].isin(ORGANIZATION_IDS)]
@@ -49,5 +53,8 @@ learning_goal = learning_goal[[
     "title_de"
 ]]
 
-#%% 
-learning_goal[(~pd.isna(learning_goal["research_id"])) & (~learning_goal["research_id"].isin(["M06M1"]))].reset_index(drop=True)
+# %% save to file 
+learning_goal.to_csv(
+    os.path.join(SAVE_PATH_LEARNING_INDICATOR, "learning_goals.csv"), 
+    index=False
+)

@@ -1,17 +1,23 @@
-#%%
 import pandas as pd
 import json 
 import re
 
-from typing import List, Tuple
+from typing import List
 from enum import Enum
+
+DATA_PATH_LEARNING_INDICATOR = "/Users/julian/Documents/Code/test_learning_indicator/data/learning_indicator"
+DATA_PATH_ADAPTIVE_LEARNING = "/Users/julian/Documents/Code/test_learning_indicator/data/adaptive_learning"
+
+SAVE_PATH_LEARNING_INDICATOR = "/Users/julian/Documents/Code/test_learning_indicator/export/learning_indicator"
+SAVE_PATH_ADAPTIVE_LEARNING = "/Users/julian/Documents/Code/test_learning_indicator/export/adaptive_learning"
 
 
 ORGANIZATION_IDS_LEARNING_INDICATOR = [
-    "a1460275-3c3e-44ee-b522-9dfb59efffb7", # EIF 
+    # "a1460275-3c3e-44ee-b522-9dfb59efffb7", # EIF 
     "0c30cde3-7b25-4765-9db8-60696a8fb5a0", # KAMAELEON-A
     "adad2008-bbf3-40f5-b292-7920fd9bc188", # KAMAELEON-B 
 ]
+
 
 ORGANIZATION_IDS_ADAPTIVE_LEARNING = [
     "b2cc892d-12d6-4aab-a4d0-2bfa1bc723f0", # KAMAELEON-C
@@ -34,9 +40,11 @@ def resolve_research_id(x: str) -> None:
             result = x["value"].upper() 
     return result
 
+
 def load_users(
         organization_ids: List[str],
-        path: str="data/membership.csv") -> pd.DataFrame:
+        path: str="data/membership.csv"
+    ) -> pd.DataFrame:
     membership = pd.read_csv(path)
     membership = membership[membership["role"] == "Member"]
     membership["research_id"] = membership["reference_data_attribute_1"].apply(lambda x: resolve_research_id(x) if not pd.isna(x) else None)
@@ -48,7 +56,8 @@ def load_users(
 
 def load_users_without_research_id(
         organization_ids: List[str],
-        path: str="data/membership.csv") -> pd.DataFrame:
+        path: str="data/membership.csv"
+    ) -> pd.DataFrame:
     membership = pd.read_csv(path)
     membership = membership[membership["role"] == "Member"]
     membership["research_id"] = membership["reference_data_attribute_1"].apply(lambda x: resolve_research_id(x) if not pd.isna(x) else None)
@@ -61,7 +70,8 @@ def load_users_without_research_id(
 def get_research_id_by_user_id(
         user_id: str, 
         organization_ids: list,
-        path: str="data/membership.csv") -> str:
+        path: str="data/membership.csv"
+    ) -> str:
     users = load_users(
         organization_ids=organization_ids,
         path=path
@@ -74,7 +84,10 @@ def get_research_id_by_user_id(
     return research_id
 
 
-def get_user_id_by_research_id(research_id: str, path: str="data/membership.csv") -> str:
+def get_user_id_by_research_id(
+        research_id: str, 
+        path: str="data/membership.csv"
+    ) -> str:
     users = load_users(path=path)
     users.set_index("user_id", drop=True, inplace=True)
     try: 
@@ -101,7 +114,6 @@ def transform_learning_goal_changes(path: str) -> pd.DataFrame:
         elif row["old_due_on"] != row["new_due_on"]:
             result.append("due_date_changed")
         else:   
-            print("Reason for goal change unknown.")
             result.append("reason_unknown")
         return result
 
@@ -112,8 +124,7 @@ def transform_learning_goal_changes(path: str) -> pd.DataFrame:
     return result
 
 
-
-def camel_to_snake(column_name):
+def camel_to_snake(column_name: str) -> str:
     """
     Convert a column name from camel case to snake case.
     """
@@ -137,7 +148,6 @@ def resolve_assessment(assessment: dict) -> pd.DataFrame:
                 "assessment_result": s["userAnswer"]
             })
 
-
         # resolve reviewedSkills
         reviewed_skills = assessment_step["reviewedSkills"]
         for s in reviewed_skills:
@@ -147,7 +157,6 @@ def resolve_assessment(assessment: dict) -> pd.DataFrame:
                 "assessment_after_revision": s["reviewedAs"],
                 "correction_in_revision": (s["assessedAs"] != s["reviewedAs"])
             })
-
 
     assessment_results_df = pd.DataFrame(assessment_results)
     revision_results_df = pd.DataFrame(revision_results)

@@ -1,9 +1,15 @@
 #%% In welcher Woche wird welcher Person welches Feedback angezeigt?
-import pandas as pd
 import json
+import os
+import pandas as pd
 
 from typing import List
-from helper import camel_to_snake
+
+from kamaeleon.analysis.analysis_helper import (
+    camel_to_snake,
+    DATA_PATH_LEARNING_INDICATOR, 
+    SAVE_PATH_LEARNING_INDICATOR
+)
 
 ADMIN_USER_IDS = [
     "12936f74042d2af32db00b891475056db7db2625",
@@ -13,15 +19,9 @@ ADMIN_USER_IDS = [
     "4a126d34da7287b1147c6be2a83511c0f9c754d2"
 ]
 
-#%% 
-event = pd.read_csv("data/event.csv")
-
-#%% 
-sample = event.sample(1)
+event = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "fct_event.csv"))
 
 #%% derived_tstamp, event_id, user_id
-
-
 result_raw: List[pd.DataFrame] = []
 
 for i, row in event.iterrows():
@@ -39,9 +39,9 @@ for i, row in event.iterrows():
         temp
     )
 
-result = pd.concat(result_raw).sort_values(["user_id", "derived_tstamp"]).reset_index()
+displayed_indicator = pd.concat(result_raw).sort_values(["user_id", "derived_tstamp"]).reset_index()
 
-result = result[[
+displayed_indicator = displayed_indicator[[
     'user_id',
     'derived_tstamp',
     'days_left_until_deadline', 
@@ -56,10 +56,11 @@ result = result[[
     'language'
 ]]
 
-#%% 
-result = result[~result["user_id"].isin(ADMIN_USER_IDS)]
-
-#%% 
-result[result["user_id"] == "2c0b6950168866c172900ee2c1005d26371fc7c8"]
-
-# %%
+displayed_indicator = displayed_indicator[~displayed_indicator["user_id"].isin(ADMIN_USER_IDS)]
+displayed_indicator.to_csv(
+    os.path.join(
+        SAVE_PATH_LEARNING_INDICATOR,
+        "displayed_indicator.csv"
+    ),
+    index=False
+)
