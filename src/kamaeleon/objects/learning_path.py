@@ -1,6 +1,10 @@
+import os
+import pandas as pd
+
 from typing import Tuple, List
 from enum import Enum
-import pandas as pd
+
+from kamaeleon.analysis.analysis_helper import DATA_PATH_LEARNING_INDICATOR
 
 
 class PurposeOrder(Enum):
@@ -125,7 +129,7 @@ class LearningPath:
         return round(finished_duration/self.duration, 2)
 
     def initialize_from_id(self, id: str, language: str) -> None:
-        # load role
+        # load learning path
         self.id = id
         if language not in ("de", "en"):
             raise ValueError("Wrong language.")
@@ -145,14 +149,14 @@ class LearningPath:
 
 
     def _load_skills(self) -> None:
-        role_skill = pd.read_csv("data/role_skill.csv")
-        skill = pd.read_csv("data/skill.csv")
-        role_skill = role_skill[role_skill["role_id"] == self.id]
-        role_skill.sort_values("learn_order", inplace=True)
-        role_skill = pd.merge(role_skill, skill, on="skill_id", how="left")
+        lp_skill = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "bri_learning_path_skill.csv"))
+        skill = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "dim_skill.csv"))
+        lp_skill = lp_skill[lp_skill["learning_path_id"] == self.id]
+        lp_skill.sort_values("position", inplace=True)
+        lp_skill = pd.merge(lp_skill, skill, on="skill_id", how="left")
 
         skills_list = []
-        for _, skill_row in role_skill.iterrows(): # this is ordered
+        for _, skill_row in lp_skill.iterrows(): # this is ordered
             skill_dict = skill_row.to_dict()
             if self.language == "en":
                 skill_title = skill_dict["title_en"]
@@ -172,9 +176,9 @@ class LearningPath:
         if len(self.skills) == 0: 
             raise ValueError("Need to load skills first.")
 
-        material = pd.read_csv("data/material.csv")
-        lesson = pd.read_csv("data/lesson.csv")
-        bri_lesson_material = pd.read_csv("data/bri_lesson_material.csv")
+        material = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "dim_material.csv"))
+        lesson = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "dim_lesson.csv"))
+        bri_lesson_material = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "bri_lesson_material.csv"))
 
         # filter and merge
         lesson = lesson[(lesson["skill_id"].isin(self.skill_ids)) & (lesson["language"] == self.language)]
@@ -215,13 +219,13 @@ class LearningPath:
             skill.materials = tuple(materials)
                 
     def _load_meta_data(self) -> None:
-        role = pd.read_csv("data/role.csv")
-        role = role[role["role_id"] == self.id].to_dict("records")[0]
+        learning_path = pd.read_csv(os.path.join(DATA_PATH_LEARNING_INDICATOR, "dim_learning_path.csv"))
+        learning_path = learning_path[learning_path["learning_path_id"] == self.id].to_dict("records")[0]
 
         if self.language == "en":
-            self.title = role["title_en"]
+            self.title = learning_path["title_en"]
         elif self.language == "de":
-            self.title = role["title_de"]
+            self.title = learning_path["title_de"]
 
     def get_unfinished_materials(self) -> List[Material]:
         return [material for material in self.materials if not material.is_finished]

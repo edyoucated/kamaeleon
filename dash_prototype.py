@@ -10,18 +10,18 @@ from dash import html
 from dash.dependencies import Input, Output, State
 from datetime import date
 
-from src.objects.learning_path import LearningPath
-from src.objects.learning_plan import LearningPlan
-from src.objects.learning_indicator import LearningIndicator
+from kamaeleon.objects.learning_path import LearningPath
+from kamaeleon.objects.learning_plan import LearningPlan
+from kamaeleon.objects.learning_indicator import LearningIndicator
 
 # %% load learning path
-# learning_path_id = "9ffc6b57-f46d-4ca2-95e2-e1e90313717e" # Data Reporting
+# learning_path_id = "581110fd-158a-4f2a-b6f4-45c52fb7fbf7" # Data Reporting
 # language = "en"
 
-learning_path_id = "b42c3732-4baf-4e60-957e-beffbb9ea314" # Grundlagen agiles Management
+learning_path_id = "d1a84c51-962a-4f18-bccf-a0f66796060f" # Grundlagen agiles Management
 language = "de"
 
-# learning_path_id = "9f545cd2-cc08-4f95-9f0a-e7fd0fbf9909" # Führung in der Praxis
+# learning_path_id = "e55a6b40-94c7-4084-af11-b6118d10ed31" # Führung in der Praxis
 # language = "de"
 
 
@@ -90,7 +90,6 @@ app.layout = html.Div([
                     html.Div([
                         html.Div([
                             html.H3("Settings"),
-                            # html.Button("Reset", id="reset-button", n_clicks=0),
                         ]),
                         html.Div([
                             dcc.DatePickerSingle(
