@@ -1,20 +1,23 @@
-#%%
+import os
 import json
 import pandas as pd 
 
-from analysis.analysis_helper import resolve_assessment
-from user_stats_summary import user_stats, org_info
+from user_stats import user_stats, org_info
 from build_static_learning_path import static_learning_path
-from build_full_learning_path import get_full_learning_path
+
+from kamaeleon.analysis.analysis_helper import (
+    resolve_assessment,
+    DATA_PATH_ADAPTIVE_LEARNING, 
+    SAVE_PATH_ADAPTIVE_LEARNING
+)
 
 EXCLUDE_LEARNING_PATH_ID = "2853587d-9655-48f8-b83c-be05944fe90b"
-
 STATIC_LEARNING_PATH_ID = "3b4a4f82-f6c7-4ab2-a085-ed658a8bc599"
 
-#%% GET GENERIC LEARNING PATHS
-dim_learning_path = pd.read_csv("data/dim_learning_path.csv")
-dim_learning_path = dim_learning_path[dim_learning_path["learning_path_id"] != EXCLUDE_LEARNING_PATH_ID].reset_index()
 
+# GET GENERIC LEARNING PATHS
+dim_learning_path = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_learning_path.csv"))
+dim_learning_path = dim_learning_path[dim_learning_path["learning_path_id"] != EXCLUDE_LEARNING_PATH_ID].reset_index()
 
 dim_learning_path = dim_learning_path[[
     "learning_path_id", 
@@ -29,9 +32,9 @@ dim_learning_path = dim_learning_path[[
     how="left"
 )
 
-bri_learning_path_skill = pd.read_csv("data/bri_learning_path_skill.csv")
+bri_learning_path_skill = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "bri_learning_path_skill.csv"))
 bri_learning_path_skill = bri_learning_path_skill[bri_learning_path_skill["learning_path_id"] != EXCLUDE_LEARNING_PATH_ID]
-dim_skill = pd.read_csv("data/dim_skill.csv")
+dim_skill = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_skill.csv"))
 
 generic_learning_paths = bri_learning_path_skill.merge(
     dim_learning_path,
@@ -46,11 +49,9 @@ generic_learning_paths = bri_learning_path_skill.merge(
 generic_learning_paths = pd.concat([generic_learning_paths, static_learning_path]).reset_index(drop=True)
 
 
-#%% resolve assessments
+# resolve assessments
+personalized_learning_path = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_personalized_learning_path.csv"))
 
-personalized_learning_path = pd.read_csv("data/dim_personalized_learning_path.csv")
-
-# resolve assessments 
 resolved_assessments = []
 for i, row in personalized_learning_path.iterrows():
     if row["assessments"] is not None:
@@ -63,11 +64,9 @@ for i, row in personalized_learning_path.iterrows():
             resolved_assessments.append(resolved_assessment)
 
 resolved_assessments_df = pd.concat(resolved_assessments)
-resolved_assessments_df
 
-#%% 
-generic_learning_paths
 
+#
 assessment_stats = user_stats.merge(
     generic_learning_paths, 
     on=["learning_path_id", "organization_id", "learning_path_type"],
@@ -78,12 +77,9 @@ assessment_stats = user_stats.merge(
     how="left"
 )
 
-#%% add user skills
-user_skill_history = pd.read_csv("data/fct_user_skill_history.csv")
-
-# user_skill_history = user_skill_history[user_skill_history["user_id"].isin(user_stats["user_id"].unique().tolist())]
-
-#%% 
+#add user skills
+user_skill_history = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "fct_user_skill_history.csv"))
+user_skill_history = user_skill_history[user_skill_history["user_id"].isin(user_stats["user_id"].unique().tolist())]
 ush = user_skill_history[[
     "user_id", 
     "skill_id",
@@ -99,7 +95,6 @@ learning_results = learning_results[[
     "has_learned"
 ]]
 
-#%% 
 assessment_stats = assessment_stats.merge(
     learning_results,
     on=["user_id", "skill_id"],
@@ -107,6 +102,8 @@ assessment_stats = assessment_stats.merge(
 )
 
 
-#%% write results 
-
-assessment_stats.to_excel("export/adaptive_assessments.xlsx", index=False)
+# write results 
+assessment_stats.to_csv(
+    os.path.join(SAVE_PATH_ADAPTIVE_LEARNING, "adaptive_assessments.csv"), 
+    index=False
+)

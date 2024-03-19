@@ -1,27 +1,27 @@
-#%%
+import os
 import pandas as pd
 
+from kamaeleon.analysis.analysis_helper import DATA_PATH_ADAPTIVE_LEARNING
 
-lp = pd.read_csv("data/dim_learning_path.csv")
-bri_lp_skill = pd.read_csv("data/bri_learning_path_skill.csv")
-dim_skill = pd.read_csv("data/dim_skill.csv")
-skill_duration = pd.read_csv("data/skill_duration.csv")
 
-dim_question = pd.read_csv("data/dim_question.csv")
-bri_skill_question = pd.read_csv("data/bri_skill_question.csv")
-bri_material_question = pd.read_csv("data/bri_material_question.csv")
+lp = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_learning_path.csv"))
+bri_lp_skill = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "bri_learning_path_skill.csv"))
+dim_skill = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_skill.csv"))
+skill_duration = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "fct_skill_duration.csv"))
 
-dim_material = pd.read_csv("data/material.csv")
-dim_lesson = pd.read_csv("data/lesson.csv")
-bri_lesson_material = pd.read_csv("data/bri_lesson_material.csv")
+dim_question = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_question.csv"))
+bri_skill_question = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "bri_skill_question.csv"))
+bri_material_question = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "bri_material_question.csv"))
 
-user_skill_history = pd.read_csv("data/fct_user_skill_history.csv")
-dependencies = pd.read_csv("data/dim_skill_skill_dependency.csv")
+dim_material = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_material.csv"))
+dim_lesson = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_lesson.csv"))
+bri_lesson_material = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "bri_lesson_material.csv"))
+
+user_skill_history = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "fct_user_skill_history.csv"))
+dependencies = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_skill_skill_dependency.csv"))
 
 
 def get_full_learning_path(learning_path_id: str) -> pd.DataFrame:
-
-# LP_ID = "50bf8f86-68f1-4fc5-b83e-f7c5834e4f5d"
 
     full_lp = bri_lp_skill[bri_lp_skill["learning_path_id"] == learning_path_id]
     full_lp = full_lp.merge(
@@ -66,7 +66,7 @@ def get_full_learning_path(learning_path_id: str) -> pd.DataFrame:
     lp_materials["object_type"] = "material"
 
 
-#%% get questions attached to materials
+    # get questions attached to materials
     material_questions = lp_materials.merge(
             bri_material_question[["material_id", "question_id"]],
             on="material_id", 
@@ -77,14 +77,14 @@ def get_full_learning_path(learning_path_id: str) -> pd.DataFrame:
         "question_id"
     ]]
 
-    #%% get questions attached to skills 
+    # get questions attached to skills 
     skill_questions = bri_skill_question[bri_skill_question["skill_id"].isin(lp_skill_ids)][["skill_id", "question_id"]]
 
-    #%% combine 
+    # combine 
     all_questions = pd.concat([skill_questions, material_questions])
     all_questions["object_type"] = "question"
 
-    #%% assemble full LP 
+    # assemble full LP 
     lp_content = pd.concat([
         all_questions.rename(columns={"question_id": "object_id"}), 
         lp_materials.rename(columns={"material_id": "object_id"})

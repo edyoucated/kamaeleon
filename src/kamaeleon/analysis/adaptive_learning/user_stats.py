@@ -1,12 +1,18 @@
-#%% 
+import os
 import pandas as pd 
 
-from analysis.analysis_helper import load_users, load_users_without_research_id
-from analysis.analysis_helper import ORGANIZATION_IDS_ADAPTIVE_LEARNING as ORGANIZATION_IDS
-from analysis.analysis_helper import LearningPathType
+from kamaeleon.analysis.analysis_helper import (
+    load_users, 
+    load_users_without_research_id
+)
+from kamaeleon.analysis.analysis_helper import ORGANIZATION_IDS_ADAPTIVE_LEARNING as ORGANIZATION_IDS
+from kamaeleon.analysis.analysis_helper import (
+    LearningPathType, 
+    DATA_PATH_ADAPTIVE_LEARNING, 
+    SAVE_PATH_ADAPTIVE_LEARNING
+)
 
 
-#%%
 org_info = pd.DataFrame({
     "organization_id": ORGANIZATION_IDS,
     "organization_name": [f"KAMAELEON-{x}" for x in ["C", "D", "E"]],
@@ -24,20 +30,19 @@ org_info = pd.DataFrame({
 })
 
 users = load_users(
-    path="data/membership.csv",
+    path=os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_membership.csv"),
     organization_ids=ORGANIZATION_IDS
 )
 users.drop(columns=["role"], inplace=True)
 print(f"Number of users with RESEARCH ID: {len(users)}")
 
 users_without_research_id = load_users_without_research_id(
-    path="data/membership.csv",
+    path=os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_membership.csv"),
     organization_ids=ORGANIZATION_IDS
 )
 print(f"Number of users without RESEARCH ID: {len(users_without_research_id)}")
 
 
-#%% 
 user_stats = users.merge(
     org_info, 
     on="organization_id",
@@ -50,10 +55,8 @@ for i, row in user_stats.groupby("learning_path_type")["user_id"].count().reset_
         row["user_id"]
     ))
 
-# %% build general stats 
-personalized_learning_path = pd.read_csv("data/dim_personalized_learning_path.csv")
-
-
+# build general stats 
+personalized_learning_path = pd.read_csv(os.path.join(DATA_PATH_ADAPTIVE_LEARNING, "dim_personalized_learning_path.csv"))
 
 general_stats = user_stats.merge(
     personalized_learning_path[[
@@ -74,4 +77,7 @@ general_stats = user_stats.merge(
     how="left"
 )
 
-general_stats.to_excel("export/stats_summary.xlsx", index=False)
+general_stats.to_csv(
+    os.path.join(SAVE_PATH_ADAPTIVE_LEARNING, "stats_summary.csv"), 
+    index=False
+)

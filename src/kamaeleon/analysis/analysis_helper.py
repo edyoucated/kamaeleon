@@ -11,6 +11,9 @@ DATA_PATH_ADAPTIVE_LEARNING = "/Users/julian/Documents/Code/test_learning_indica
 SAVE_PATH_LEARNING_INDICATOR = "/Users/julian/Documents/Code/test_learning_indicator/export/learning_indicator"
 SAVE_PATH_ADAPTIVE_LEARNING = "/Users/julian/Documents/Code/test_learning_indicator/export/adaptive_learning"
 
+STATIC_LEARNING_PATH_ID = "3b4a4f82-f6c7-4ab2-a085-ed658a8bc599"
+ADAPTIVE_QA_LEARNING_PATH_ID = "d62c5dbe-7e5e-4cc9-929c-2112641cd7a2"
+ADAPTIVE_SA_LEARNING_PATH_ID = "50bf8f86-68f1-4fc5-b83e-f7c5834e4f5d"
 
 ORGANIZATION_IDS_LEARNING_INDICATOR = [
     # "a1460275-3c3e-44ee-b522-9dfb59efffb7", # EIF 
@@ -30,7 +33,7 @@ class LearningPathType(Enum):
     STATIC = "STATIC"
     SELF_ASSESSMENT = "SELF_ASSESSMENT"
     QUIZ_ASSESSMENT = "QUIZ_ASSESSMENT"
-
+    
 
 def resolve_research_id(x: str) -> None: 
     result = None
